@@ -1,2 +1,5 @@
 [core]
     no_scm = True
+    remote = temp
+['remote "temp"']
+    url = /tmp/dvcstore
