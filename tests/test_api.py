@@ -1,4 +1,3 @@
-# tests/test_api.py
 import base64, pytest
 from fastapi.testclient import TestClient
 from app.main import app

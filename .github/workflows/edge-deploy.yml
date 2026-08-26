@@ -1,1 +1,141 @@
-# oi
+name: Build, Test e Deploy — Edge AI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/yolo-api
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+
+  # ─────────────────────────────────────────────
+  # JOB 1 — Testes
+  # ─────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: |
+          pip install -r app/requirements.txt
+          pip install pytest ruff
+
+      - name: Ruff
+        run: ruff check app/
+
+      - name: Testes
+        run: pytest tests/ -v
+
+
+  # ─────────────────────────────────────────────
+  # JOB 2 — Build multi-arch + GHCR
+  # ─────────────────────────────────────────────
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login no GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+
+  # ─────────────────────────────────────────────
+  # JOB 3 — Quality Gate do modelo
+  # ─────────────────────────────────────────────
+  model-gate:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar DVC e Ultralytics
+        run: |
+          pip install dvc ultralytics
+
+      - name: Baixar modelo
+        run: dvc pull models/yolov8n.pt
+
+      - name: Validar modelo
+        run: python scripts/validate_model.py
+
+
+  # ─────────────────────────────────────────────
+  # JOB 4 — Deploy no Raspberry Pi
+  # ─────────────────────────────────────────────
+  deploy:
+    needs: model-gate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.RPI_HOST }}
+          username: ${{ secrets.RPI_USER }}
+          key: ${{ secrets.RPI_SSH_KEY }}
+
+          script: |
+            set -e
+
+            cd ~/yolo-api
+
+            echo "Baixando nova imagem..."
+            docker compose pull
+
+            echo "Recriando containers..."
+            docker compose up -d
+
+            echo "Aguardando aplicação..."
+            sleep 10
+
+            echo "Verificando health..."
+            curl -f http://localhost:8000/health
+
+            echo "Deploy concluído com sucesso!"

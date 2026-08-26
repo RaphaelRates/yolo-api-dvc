@@ -1,2 +1,51 @@
-/output
-/.dvc
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.swp
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Modelos treinados
+*.pt
+*.pth
+*.onnx
+*.h5
+*.keras
+*.ckpt
+
+# Dados grandes
+data/
+datasets/
+
+# DVC cache
+.dvc/cache/
+
+# Variáveis de ambiente
+.env
+.env.*
+
+# Docker
+*.tar
