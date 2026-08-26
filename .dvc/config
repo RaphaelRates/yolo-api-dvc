@@ -1,5 +1,7 @@
 [core]
     no_scm = True
-    remote = temp
+    remote = local_remote
 ['remote "temp"']
     url = /tmp/dvcstore
+['remote "local_remote"']
+    url = /home/tezika/dvc-storage
