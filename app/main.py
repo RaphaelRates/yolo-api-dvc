@@ -1,11 +1,11 @@
 import base64
 import io
 import time
+from PIL import Image
 
 import httpx
 import numpy as np
 from fastapi import FastAPI, HTTPException, Response
-from PIL import Image
 
 from model import get_default_model_name, load_model
 from schemas import (
@@ -45,13 +45,11 @@ def _decode_image(image_base64: str) -> np.ndarray:
     """Converte uma imagem Base64 em um array NumPy RGB."""
     raw = base64.b64decode(image_base64)
     image = Image.open(io.BytesIO(raw)).convert("RGB")
-
     return np.array(image)
 
 
 def _load_image_from_request(request: PredictRequest) -> np.ndarray:
     """Carrega a imagem a partir de Base64 ou URL pública em formato RGB."""
-
     if not request.image_base64 and not request.image_url:
         raise HTTPException(
             status_code=422,
@@ -69,7 +67,6 @@ def _load_image_from_request(request: PredictRequest) -> np.ndarray:
     response.raise_for_status()
 
     image = Image.open(io.BytesIO(response.content)).convert("RGB")
-
     return np.array(image)
 
 
@@ -83,7 +80,6 @@ def _run_inference(
     confidence: float,
 ) -> PredictResponse:
     """Executa a inferência YOLO e retorna as detecções."""
-
     model = load_model(model_name)
 
     start_time = time.perf_counter()
@@ -136,13 +132,12 @@ def _run_inference(
 )
 async def health_check():
     """Verifica o estado da API e do modelo padrão."""
-
     model_name = get_default_model_name()
 
     try:
         load_model(model_name)
         model_loaded = True
-    except Exception:
+    except (FileNotFoundError, RuntimeError, ValueError):
         model_loaded = False
 
     return HealthResponse(
@@ -158,7 +153,6 @@ async def health_check():
 )
 def predict(request: PredictRequest):
     """Executa a inferência e retorna as detecções."""
-
     _metrics["total"] += 1
 
     try:
@@ -184,7 +178,7 @@ def predict(request: PredictRequest):
             detail=str(error),
         )
 
-    except Exception as error:
+    except RuntimeError as error:
         raise HTTPException(
             status_code=500,
             detail=str(error),
@@ -203,7 +197,6 @@ def predict(request: PredictRequest):
 )
 def predict_image(request: PredictRequest):
     """Executa a inferência e retorna a imagem anotada em JPEG."""
-
     _metrics["total"] += 1
 
     try:
@@ -266,7 +259,6 @@ def predict_image(request: PredictRequest):
 )
 def predict_batch(request: BatchPredictRequest):
     """Executa inferência em múltiplas imagens Base64."""
-
     start_time = time.perf_counter()
 
     results = []
@@ -296,11 +288,8 @@ def predict_batch(request: BatchPredictRequest):
 )
 async def get_metrics():
     """Retorna métricas básicas de utilização da API."""
-
     if _metrics["success"] > 0:
-        average_ms = (
-            _metrics["total_ms"] / _metrics["success"]
-        )
+        average_ms = _metrics["total_ms"] / _metrics["success"]
     else:
         average_ms = 0.0
 
