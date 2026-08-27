@@ -8,15 +8,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException, Response
 
 from model import get_default_model_name, load_model
-from schemas import (
-    BatchPredictRequest,
-    BatchPredictResponse,
-    Detection,
-    HealthResponse,
-    MetricsResponse,
-    PredictRequest,
-    PredictResponse,
-)
+from schemas import BatchPredictRequest, BatchPredictResponse, Detection, HealthResponse, MetricsResponse, PredictRequest, PredictResponse
 
 
 app = FastAPI(
