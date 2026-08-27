@@ -185,7 +185,7 @@ jobs:
 
   # ─────────────────────────────────────────────────────────
   # JOB 4: Deploy no Raspberry Pi 5 via SSH
-  # Executa apenas em push para main (não em PRs)
+  # Executa apenas em push para main, não em PRs
   # ─────────────────────────────────────────────────────────
   deploy:
     name: "Deploy → Raspberry Pi 5"
