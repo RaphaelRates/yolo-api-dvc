@@ -4,4 +4,4 @@
 ['remote "temp"']
     url = /tmp/dvcstore
 ['remote "local_remote"']
-    url = /home/tezika/dvc-storage
+    url = ssh://@100.123.111.36/home//dvc-storage
