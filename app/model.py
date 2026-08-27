@@ -4,7 +4,6 @@ from pathlib import Path
 import torch
 from ultralytics import YOLO
 
-
 # Ajuste para PyTorch 2.6+:
 # desativa temporariamente o comportamento weights_only
 # durante o carregamento dos pesos do YOLO.
